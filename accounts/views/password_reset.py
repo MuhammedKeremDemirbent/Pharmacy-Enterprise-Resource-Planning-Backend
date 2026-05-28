@@ -20,7 +20,7 @@ class ForgotPasswordView(APIView):
             user = User.objects.get(email=email)
         except User.DoesNotExist:
             # Dürüst Yaklaşım: Kullanıcı yoksa hata döneriz
-            return Response({"error": "Bu e-posta adresiyle kayıtlı kullanıcı bulunamadı."}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "No registered user found with this email address."}, status=status.HTTP_404_NOT_FOUND)
 
         #Token Oluştur 
         token = get_random_string(length=32)
@@ -32,9 +32,9 @@ class ForgotPasswordView(APIView):
         # Mail Linki Oluştur
         reset_link = f"http://localhost:3000/reset-password?token={token}"
         
-        subject = "Eczane ERP - Şifre Sıfırlama Talebi"
+        subject = "Pharmacy ERP - Password Reset Request"
         message = f"""
-        Merhaba {user.first_name},
+        Hello {user.first_name},
 
         # subject = "Eczane ERP - Şifre Sıfırlama Talebi" # Subject and message will be handled by the Celery task
         # message = f"""
@@ -51,7 +51,7 @@ class ForgotPasswordView(APIView):
         from accounts.tasks import send_password_reset_email
         send_password_reset_email.apply_async(args=[email, reset_link, user.first_name])
 
-        return Response({"message": "Şifre sıfırlama linki e-posta adresinize gönderildi."}, status=status.HTTP_200_OK)
+        return Response({"message": "Password reset link has been sent to your email address."}, status=status.HTTP_200_OK)
 
 class ResetPasswordView(APIView):
     def post(self, request):
@@ -59,14 +59,14 @@ class ResetPasswordView(APIView):
         new_password = request.data.get('new_password')
         
         if not token or not new_password:
-            return Response({"error": "Token ve yeni şifre gereklidir."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "Token and new password are required."}, status=status.HTTP_400_BAD_REQUEST)
         
         #Redis'ten Token'ı Kontrol Et
         redis_key = f"password_reset_{token}"
         user_id = cache.get(redis_key)
         
         if not user_id:
-            return Response({"error": "Geçersiz veya süresi dolmuş link."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "Invalid or expired link."}, status=status.HTTP_400_BAD_REQUEST)
         
         #Kullanıcıyı Bul ve Şifresini Değiştir
         try:
@@ -77,7 +77,7 @@ class ResetPasswordView(APIView):
             #Token'ı Sil (Tek kullanımlık olsun)
             cache.delete(redis_key)
             
-            return Response({"message": "Şifreniz başarıyla değiştirildi. Yeni şifrenizle giriş yapabilirsiniz."}, status=status.HTTP_200_OK)
+            return Response({"message": "Your password has been successfully changed. You can log in with your new password."}, status=status.HTTP_200_OK)
             
         except User.DoesNotExist:
-            return Response({"error": "Kullanıcı bulunamadı."}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)

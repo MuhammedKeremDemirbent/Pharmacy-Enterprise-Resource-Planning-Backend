@@ -24,7 +24,7 @@ class PatientExcelUploadView(APIView):
         file = request.FILES.get('file')
         
         if not file:
-            return Response({"error": "Lütfen bir dosya yükleyin."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "Please upload a file."}, status=status.HTTP_400_BAD_REQUEST)
         
         try:
          
@@ -36,7 +36,7 @@ class PatientExcelUploadView(APIView):
             
             for index, row in df.iterrows():
                 if not row.get('Ad') or not row.get('Soyad'):
-                    continue
+                     continue
                     
                 hasta = Patient(
                     tc=row.get('TC'),
@@ -50,10 +50,10 @@ class PatientExcelUploadView(APIView):
             
             Patient.objects.bulk_create(hasta_listesi, ignore_conflicts=True)
             
-            bilgi = f"{len(hasta_listesi)} hasta başarıyla eklendi!"
+            bilgi = f"{len(hasta_listesi)} patients successfully added!"
             return Response({"message": bilgi}, status=status.HTTP_201_CREATED)
             
         except Exception as e:
-            return Response({"error": f"Hata oluştu: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({"error": f"An error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 # ignore_conflicts=True (Çakışma Kalkanı),continue,.get()

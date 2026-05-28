@@ -34,7 +34,7 @@ class MedicineExcelUploadView(APIView):
     def post(self, request, *args, **kwargs):
         file = request.FILES.get('file')
         if not file:
-            return Response({"error": "Lütfen bir dosya yükleyin."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "Please upload a file."}, status=status.HTTP_400_BAD_REQUEST)
         
         try:
             df = pd.read_excel(file)
@@ -65,10 +65,10 @@ class MedicineExcelUploadView(APIView):
                 unique_fields=['barcode']
             )
             
-            bilgi = f"{len(ilac_listesi)} ilaç başarıyla işlendi!"
+            bilgi = f"{len(ilac_listesi)} medicines successfully processed!"
             return Response({"message": bilgi}, status=status.HTTP_201_CREATED)
             
         except Exception as e:
-            return Response({"error": f"Hata oluştu: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({"error": f"An error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 #modelviewset kullanılacak apilerde
