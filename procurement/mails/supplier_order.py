@@ -11,35 +11,35 @@ def send_supplier_order_email(supplier_id, order_items, custom_message=None, cus
     try:
         supplier = Procurement.objects.get(id=supplier_id)
     except Procurement.DoesNotExist:
-        return "Tedarikçi bulunamadı."
+        return "Supplier not found."
         
     if not supplier.email:
-        return f"{supplier.name} için mail adresi kayıtlı değil."
+        return f"Email address not registered for {supplier.name}."
         
     items_text = ""
     if order_items:
-        items_text += "Sipariş Listesi:\n"
+        items_text += "Order List:\n"
         for item in order_items:
             name = item.get('name') if isinstance(item, dict) else item
             quantity = item.get('quantity', 1) if isinstance(item, dict) else 1
-            items_text += f"- {name} : {quantity} Kutu\n"
+            items_text += f"- {name} : {quantity} Box(es)\n"
             
-    # Özel konu başlığı varsa kullan, yoksa standart
-    subject = custom_subject if custom_subject else f"Sipariş Talebi - Demirbent Eczanesi"
+    # Use custom subject if provided, otherwise default
+    subject = custom_subject if custom_subject else f"Order Request - Demirbent Pharmacy"
 
     if custom_message:
         body_text = custom_message
     else:
-        body_text = "Aşağıdaki ürünlerin tarafımıza en kısa sürede gönderilmesini rica ederiz."
+        body_text = "We kindly request the following products to be sent to us as soon as possible."
 
-    final_message = f"""Sayın {supplier.name} Yetkilisi,
+    final_message = f"""Dear {supplier.name} Representative,
 
 {body_text}
 
 {items_text}
 
-Saygılarımızla,
-Demirbent Eczanesi"""
+Best regards,
+Demirbent Pharmacy"""
     
     send_mail(
         subject=subject,
@@ -49,4 +49,4 @@ Demirbent Eczanesi"""
         fail_silently=False,
     )
     
-    return f"Mail gönderildi: {supplier.email}"
+    return f"Email sent: {supplier.email}"

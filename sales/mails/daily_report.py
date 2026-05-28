@@ -14,16 +14,16 @@ def send_daily_sales_report():
 
     total_revenue = Sale.objects.filter(created_at__date=report_date).aggregate(Sum('total_amount'))['total_amount__sum'] or 0
     
-    subject = f"GÜNLÜK RAPOR: {report_date.strftime('%d.%m.%Y')}"
+    subject = f"DAILY REPORT: {report_date.strftime('%d.%m.%Y')}"
     message = f"""
-    Sayın Yönetici,
+    Dear Manager,
     
-    Demirbent Eczanesi Gün Sonu Raporu:
+    Demirbent Pharmacy End of Day Report:
     --------------------------------
-    Tarih: {report_date.strftime('%d.%m.%Y')}
-    Toplam Ciro: {total_revenue} TL
+    Date: {report_date.strftime('%d.%m.%Y')}
+    Total Revenue: {total_revenue} TRY
     
-    İyi çalışmalar dileriz.
+    Best regards.
     """
     
     send_mail(
@@ -34,4 +34,4 @@ def send_daily_sales_report():
         fail_silently=False,
     )
     
-    return f"Günlük Rapor Gönderildi: {total_revenue} TL"
+    return f"Daily Report Sent: {total_revenue} TRY"

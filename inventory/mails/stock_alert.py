@@ -8,35 +8,35 @@ def check_stock_metrics():
     """
     10'dan az kalan ilaçları raporlar ve mail atar.
     """
-    print("Stok Kontrolü Başladı")
+    print("Stock Control Started")
     
-    # 10'dan az ise
+    # Less than 10
     low_stock_medicines = Medicine.objects.filter(how_many__lt=10)
     
     if low_stock_medicines.exists():
         count = low_stock_medicines.count()
-        print(f"DİKKAT! {count} adet ilaç kritik seviyede:")
+        print(f"ATTENTION! {count} medicines are at a critical level:")
         
-        # Mail İçeriği Hazırla
-        message_body = f"DİKKAT! {count} adet ilaç stokta azalmıştır.\n\nEksik İlaçlar:\n"
+        # Prepare Email Content
+        message_body = f"ATTENTION! {count} medicines are running low in stock.\n\nLow Stock Medicines:\n"
         for med in low_stock_medicines:
-            line = f"- {med.name} (Kalan: {med.how_many})"
+            line = f"- {med.name} (Remaining: {med.how_many})"
             print(line)
             message_body += line + "\n"
             
-        message_body += "\nLütfen tedarik işlemlerini başlatınız."
+        message_body += "\nPlease initiate the procurement process."
 
-        # Mailpit yerine ilerde Mailgun veya AWS
+        # Mailgun or AWS in the future instead of Mailpit
         send_mail(
-            subject="ACİL: Kritik Stok Uyarısı",
+            subject="URGENT: Critical Stock Alert",
             message=message_body,
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=['keremdmrbnt03@gmail.com'],
             fail_silently=False,
         ) 
-        return f"Mail Gönderildi: {count} ilaç eksik."
+        return f"Email Sent: {count} medicines low."
         
     else:
-        print("Stok durumu harika! Eksik ilaç yok.")
+        print("Stock status is great! No missing medicines.")
         
-    return "Kontrol Tamamlandı (Sorun Yok)"
+    return "Control Completed (No Issue)"

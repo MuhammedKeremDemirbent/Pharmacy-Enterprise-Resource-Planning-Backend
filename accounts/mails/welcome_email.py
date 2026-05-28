@@ -10,19 +10,19 @@ def send_welcome_email(user_id, password):
     """
     try:
         user = User.objects.get(id=user_id)
-        subject = "Eczane ERP Sistemine Hoşgeldiniz!"
+        subject = "Welcome to the Pharmacy ERP System!"
         message = f"""
-        Merhaba {user.first_name},
+        Hello {user.first_name},
         
-        Eczane ERP sistemine personel kaydınız yapılmıştır.
-        Giriş Bilgileriniz:
+        Your staff registration to the Pharmacy ERP system has been completed.
+        Login Credentials:
         
-        Kullanıcı Adı: {user.username}
-        Şifre: {password}
+        Username: {user.username}
+        Password: {password}
         """
         send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [user.email], fail_silently=False)
-        return f"Hoşgeldin maili gönderildi: {user.email}"
+        return f"Welcome email sent to: {user.email}"
     except User.DoesNotExist:
-        return f"Kullanıcı bulunamadı: {user_id}"
+        return f"User not found: {user_id}"
     except Exception as e:
-        return f"Mail hatası: {str(e)}"
+        return f"Email error: {str(e)}"

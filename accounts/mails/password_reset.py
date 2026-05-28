@@ -9,22 +9,22 @@ def send_password_reset_email(email, reset_link, user_first_name):
     """
     Şifre sıfırlama mailini asenkron olarak gönderir.
     """
-    subject = "Eczane ERP - Şifre Sıfırlama Talebi"
+    subject = "Pharmacy ERP - Password Reset Request"
     message = f"""
-    Merhaba {user_first_name},
+    Hello {user_first_name},
 
-    Şifrenizi sıfırlamak için aşağıdaki linke tıklayın:
+    Click the link below to reset your password:
     {reset_link}
 
-    Bu link 15 dakika geçerlidir.
-    Eğer bu talebi siz yapmadıysanız, lütfen dikkate almayınız.
+    This link is valid for 15 minutes.
+    If you did not make this request, please ignore this email.
     """
     
     try:
         send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [email], fail_silently=False)
-        return f"Şifre sıfırlama maili gönderildi: {email}"
+        return f"Password reset email sent to: {email}"
     except Exception as e:
-        return f"Mail gönderilemedi: {str(e)}"
+        return f"Failed to send email: {str(e)}"
 
 
 #Asenkron-celery Mantığı ile Yapıldı

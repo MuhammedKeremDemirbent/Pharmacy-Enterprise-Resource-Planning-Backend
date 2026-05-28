@@ -9,23 +9,23 @@ def send_weekly_campaign_email():
     patients = Patient.objects.exclude(email__isnull=True).exclude(email__exact='')
         
     messages = []
-    subject = "Sağlıklı Haftalar Dileriz!"
+    subject = "We Wish You a Healthy Week!"
     
     for patient in patients:
         text = f"""
-        Sayın {patient.first_name} {patient.last_name},
+        Dear {patient.first_name} {patient.last_name},
         
-        Mutlu ve sağlıklı bir hafta geçirmenizi dileriz.
-        İlaçlarınızın takibini yapmayı unutmayın!
+        We wish you a happy and healthy week.
+        Please do not forget to track your medications!
         
-        Saygılarımızla,
-        Demirbent Eczanesi
+        Best regards,
+        Demirbent Pharmacy
         """
         
         messages.append((subject, text, settings.DEFAULT_FROM_EMAIL, [patient.email]))
     
     if messages:
         send_mass_mail(tuple(messages), fail_silently=False)
-        return f"{len(messages)} kişiye haftalık mail gönderildi."
+        return f"Weekly email sent to {len(messages)} people."
     else:
-        return "Gönderilecek kimse bulunamadı."
+        return "No recipients found."

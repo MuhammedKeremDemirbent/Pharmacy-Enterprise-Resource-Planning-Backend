@@ -1,3 +1,4 @@
+# pyrefly: ignore [missing-import]
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -20,40 +21,65 @@ class CheckoutView(APIView):
         patient_id = serializer.validated_data.get('patient_id') 
         
        
+        # Group duplicate product IDs to calculate total stock requirements
+        grouped_items = {}
+        for item in items_data:
+            pid = item['product_id']
+            qty = item['quantity']
+            if qty <= 0:
+                return Response({"error": "Quantity must be greater than zero."}, status=status.HTTP_400_BAD_REQUEST)
+            grouped_items[pid] = grouped_items.get(pid, 0) + qty
+
+        product_ids = list(grouped_items.keys())
+
         with transaction.atomic():
-            # Satışı yapan kişiyi ve varsa Müşteriyi kaydetme
-            user = request.user if request.user.is_authenticated else None
-            sale = Sale.objects.create(user=user, patient_id=patient_id)
-            total_price = 0
-            
-            for item in items_data:
-                product_id = item['product_id']
-                quantity = item['quantity']
+            # 1. Batch select all medicines with row-level locks
+            medicines = Medicine.objects.select_for_update().filter(id__in=product_ids)
+            medicine_map = {m.id: m for m in medicines}
 
-                try:
-                    medicine = Medicine.objects.select_for_update().get(id=product_id)
-                except Medicine.DoesNotExist:
-                    return Response({"error": f"Ürün bulunamadı ID: {product_id}"}, status=status.HTTP_404_NOT_FOUND)
+            # 2. Verify all products exist
+            for pid in product_ids:
+                if pid not in medicine_map:
+                    return Response({"error": f"Ürün bulunamadı ID: {pid}"}, status=status.HTTP_404_NOT_FOUND)
 
-                if medicine.how_many < quantity:
+            # 3. Verify stock levels in-memory
+            for pid, qty in grouped_items.items():
+                medicine = medicine_map[pid]
+                if medicine.how_many < qty:
                     return Response(
                         {"error": f"{medicine.name} stoğu yetersiz! (Kalan: {medicine.how_many})"}, 
                         status=status.HTTP_400_BAD_REQUEST
                     )
 
-                medicine.how_many -= quantity
-                medicine.save()
-
-                SaleItem.objects.create(
+            # 4. Create the Sale record
+            user = request.user if request.user.is_authenticated else None
+            sale = Sale.objects.create(user=user, patient_id=patient_id)
+            
+            # 5. In-memory stock deductions and SaleItem preparation
+            sale_items = []
+            total_price = 0
+            
+            for item in items_data:
+                pid = item['product_id']
+                qty = item['quantity']
+                medicine = medicine_map[pid]
+                
+                medicine.how_many -= qty
+                sale_items.append(SaleItem(
                     sale=sale,
                     medicine=medicine,
-                    quantity=quantity,
-                    price=medicine.price # O anki fiyat
-                )
-                
-                total_price += medicine.price * quantity
+                    quantity=qty,
+                    price=medicine.price
+                ))
+                total_price += medicine.price * qty
 
-            # Toplam tutarı güncelleme
+            # 6. Bulk update stock in the database
+            Medicine.objects.bulk_update(list(medicine_map.values()), ['how_many'])
+
+            # 7. Bulk insert SaleItem records
+            SaleItem.objects.bulk_create(sale_items)
+
+            # 8. Update Sale total amount
             sale.total_amount = total_price
             sale.save()
 

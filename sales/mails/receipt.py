@@ -11,40 +11,40 @@ def send_sale_receipt_email(self, sale_id):
     try:
         sale = Sale.objects.get(id=sale_id)
     except Sale.DoesNotExist:
-        return "Satış bulunamadı!"
+        return "Sale not found!"
 
-    # Müşterisi maili varsa at
+    # Send if customer has email
     if not sale.patient:
-        print(f"📧 Satış #{sale_id} için Müşteri bulunamadı. İptal.")
-        return f"Satış #{sale_id} için e-posta gönderilemedi (Müşteri yok)."
+        print(f"📧 Customer not found for Sale #{sale_id}. Cancelled.")
+        return f"Could not send email for Sale #{sale_id} (No Customer)."
     
     if not sale.patient.email:
-        print(f"📧 Satış #{sale_id} için Müşteri email adresi yok. İptal.")
-        return f"Satış #{sale_id} için e-posta gönderilemedi (Mail adresi yok)."
+        print(f"📧 Customer email address is missing for Sale #{sale_id}. Cancelled.")
+        return f"Could not send email for Sale #{sale_id} (No email address)."
 
-    print(f"📧 Satış #{sale_id} için mail gönderiliyor: {sale.patient.email}")
+    print(f"📧 Sending email for Sale #{sale_id} to: {sale.patient.email}")
 
 
-    # Satın alınan ilaçları listeleme
+    # List purchased medicines
     items_list = ""
     for item in sale.items.all():
-        items_list += f"- {item.medicine.name} ({item.quantity} Adet) : {item.price} TL\n"
+        items_list += f"- {item.medicine.name} ({item.quantity} Unit(s)) : {item.price} TRY\n"
 
-    subject = f"E-Fatura: Satış #{sale.id}"
-    message = f"""Sayın {sale.patient.first_name} {sale.patient.last_name},
-Eczanemizden yapmış olduğunuz alışveriş detayları aşağıdadır:
+    subject = f"E-Invoice: Sale #{sale.id}"
+    message = f"""Dear {sale.patient.first_name} {sale.patient.last_name},
+Below are the details of the purchase you made from our pharmacy:
 
 {items_list}
 --------------------------------
-Toplam Tutar: {sale.total_amount} TL 
+Total Amount: {sale.total_amount} TRY 
 
-Sağlıklı günler dileriz.
-Demirbent Eczanesi"""
+We wish you healthy days.
+Demirbent Pharmacy"""
 
-    # PDF Oluştur
+    # Generate PDF
     pdf_buffer = generate_sale_receipt_pdf(sale_id)
 
-    # EmailMessage Nesnesi Oluştur
+    # Create EmailMessage Object
     email = EmailMessage(
         subject=subject,
         body=message,
@@ -52,10 +52,10 @@ Demirbent Eczanesi"""
         to=[sale.patient.email],
     )
 
-    # PDF'i Ekle
-    email.attach(f"ECZANE_FIS_{sale.id}.pdf", pdf_buffer.getvalue(), 'application/pdf')
+    # Attach PDF
+    email.attach(f"PHARMACY_RECEIPT_{sale.id}.pdf", pdf_buffer.getvalue(), 'application/pdf')
 
-    # Gönder
+    # Send
     email.send(fail_silently=False)
 
-    return f"Fatura maili (PDF ekli) gönderildi: {sale.patient.email}"
+    return f"Invoice email (PDF attached) sent to: {sale.patient.email}"
